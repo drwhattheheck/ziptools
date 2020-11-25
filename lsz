@@ -1,0 +1,46 @@
+#!/bin/bash
+# lsz
+#
+# Author: William T. Hollingsworth
+# Last Revision: 30.10.2020
+# Usage: lsz <directory>
+#
+# Description:
+# Counts the zipfiles in the given directory and lists the basename for each,
+# without the extension.
+#
+# Revision History:
+# 30.10.2020
+# - Initial version.
+
+# If we don't do this, spaces will get treated as newlines when trying to work
+# with the files in a for loop.
+IFS='
+'
+
+if [ $# -ne 1 ]
+then
+    echo "usage: lsz <directory>"
+    exit 2
+fi
+
+if [ ! -d "$1" ]
+then
+    echo "\"$1\" is not a valid directory"
+    exit 2
+fi
+dir=$(realpath $1) # use an abosulte path
+
+# get all of the submissions for that block
+# -1 ensures that `ls` lists each file on its own line
+zipfiles=$(ls -1 ${dir}/*.zip)
+echo "There are $(ls -1 ${dir}/*.zip | wc --lines) zipfiles in \"${dir}\""
+for zipfile in ${zipfiles}
+do
+    # find the location of the first . character to get the basename
+    # `basename` tries to do this but doesn't play nice with things
+    # like ".zip.zip"
+    filename="$(basename ${zipfile})"
+    ext_index=$(expr index "${filename}" ".")
+    echo "    - ${filename:0:${ext_index}-1}"
+done

@@ -1,0 +1,62 @@
+#!/bin/bash
+# bxcp
+#
+# Author: William T. Hollingsworth
+# Last Revision: 28.10.2020
+# Usage: bxcp <source> <destination>
+#
+# Description:
+# Given a source directory that contains a set of zip archives, extract a copy
+# of the contents to a destination directory.  A folder will be created for each
+# archive using the basename of the archive.
+#
+# Revision History:
+# 28.10.2020
+# - Inital version.
+
+if [ $# -ne 2 ]
+then
+    echo "usage: bxcp <source> <destination>"
+    exit 2
+fi
+
+# for consistentcy with ${dest} below
+if [ ! -d "$1" ]
+then
+    echo "\"$1\" is not a valid directory"
+    exit 2
+fi
+src=$(realpath $1)
+
+# we're going to pushd into ${src}, so we need an absolute path for this
+if [ ! -d "$2" ]
+then
+    echo "\"$2\" is not a valid directory"
+    exit 2
+fi
+dest=$(realpath $2)
+
+# get all of the submissions for that block
+pushd "${src}" > /dev/null 2>&1
+for zipfile in *.zip
+do
+    # find the location of the first . character to get the basename
+    # `basename` tries to do this but doesn't play nice with things
+    # like ".zip.zip"
+    ext_index=$(expr index "${zipfile}" ".")
+    filename=${zipfile:0:${ext_index}-1}
+
+    # construct the path of the extraction directory
+    extract_dir="${dest}/${filename}"
+    if [ ! -d "${extract_dir}" ]
+    then
+        mkdir --parents "${extract_dir}"
+    fi
+
+    # extract the archive
+    # -o will overwrite existing files!  This is not ideal, but MinGW's unzip
+    # is not compiled with support for any option that will allow renaming
+    echo "extracting the contents of \"${zipfile}\" to \"${extract_dir}\"..."
+    unzip -q -o "${zipfile}" -d "${extract_dir}"
+done
+popd > /dev/null 2>&1
